@@ -2,6 +2,8 @@ enum Transmission { manual, automatic, other }
 
 enum FuelType { petrol, diesel, electric, hybrid, lpg, other }
 
+enum VehicleType { personal, company }
+
 class Vehicle {
   final String id;
   final String make;
@@ -20,6 +22,10 @@ class Vehicle {
   final String? wiperSize;
   final String? lightsCode;
   final String notes;
+  final VehicleType type;
+  final String? companyName;
+  final String? employeeId;
+  final DateTime? assignmentDate;
 
   Vehicle({
     required this.id,
@@ -39,6 +45,10 @@ class Vehicle {
     this.wiperSize,
     this.lightsCode,
     this.notes = '',
+    this.type = VehicleType.personal,
+    this.companyName,
+    this.employeeId,
+    this.assignmentDate,
   });
 
   Map<String, dynamic> toJson() => {
@@ -59,6 +69,10 @@ class Vehicle {
         'wiperSize': wiperSize,
         'lightsCode': lightsCode,
         'notes': notes,
+        'type': type.name,
+        'companyName': companyName,
+        'employeeId': employeeId,
+        'assignmentDate': assignmentDate?.toIso8601String(),
       };
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
@@ -80,6 +94,14 @@ class Vehicle {
       wiperSize: json['wiperSize'] as String?,
       lightsCode: json['lightsCode'] as String?,
       notes: (json['notes'] as String?) ?? '',
+      type: json['type'] != null
+          ? VehicleType.values.byName(json['type'] as String)
+          : VehicleType.personal,
+      companyName: json['companyName'] as String?,
+      employeeId: json['employeeId'] as String?,
+      assignmentDate: json['assignmentDate'] != null
+          ? DateTime.parse(json['assignmentDate'] as String)
+          : null,
     );
   }
 
@@ -101,6 +123,10 @@ class Vehicle {
     String? wiperSize,
     String? lightsCode,
     String? notes,
+    VehicleType? type,
+    String? companyName,
+    String? employeeId,
+    DateTime? assignmentDate,
   }) {
     return Vehicle(
       id: id ?? this.id,
@@ -120,6 +146,10 @@ class Vehicle {
       wiperSize: wiperSize ?? this.wiperSize,
       lightsCode: lightsCode ?? this.lightsCode,
       notes: notes ?? this.notes,
+      type: type ?? this.type,
+      companyName: companyName ?? this.companyName,
+      employeeId: employeeId ?? this.employeeId,
+      assignmentDate: assignmentDate ?? this.assignmentDate,
     );
   }
 }

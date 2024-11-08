@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:norimoto/presentation/theme/app_theme.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -12,31 +13,87 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: currentIndex,
-      onDestinationSelected: onTap,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.directions_car_outlined),
-          selectedIcon: Icon(Icons.directions_car),
-          label: 'Vehicles',
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.grey,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        NavigationDestination(
-          icon: Icon(Icons.build_outlined),
-          selectedIcon: Icon(Icons.build),
-          label: 'Services',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BottomNavigationBar(
+            currentIndex: currentIndex,
+            onTap: onTap,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            showSelectedLabels: false,
+            showUnselectedLabels: false,
+            selectedItemColor: AppTheme.white,
+            unselectedItemColor: AppTheme.white.withOpacity(0.5),
+            items: [
+              _buildNavItem(
+                icon: Icons.directions_car_outlined,
+                activeIcon: Icons.directions_car,
+                label: 'Vehicles',
+                context: context,
+              ),
+              _buildNavItem(
+                icon: Icons.build_outlined,
+                activeIcon: Icons.build,
+                label: 'Services',
+                context: context,
+              ),
+              _buildNavItem(
+                icon: Icons.bar_chart_outlined,
+                activeIcon: Icons.bar_chart,
+                label: 'Stats',
+                context: context,
+              ),
+              _buildNavItem(
+                icon: Icons.settings_outlined,
+                activeIcon: Icons.settings,
+                label: 'Settings',
+                context: context,
+              ),
+            ],
+          ),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.analytics_outlined),
-          selectedIcon: Icon(Icons.analytics),
-          label: 'Statistics',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.settings_outlined),
-          selectedIcon: Icon(Icons.settings),
-          label: 'Settings',
-        ),
-      ],
+      ),
     );
   }
+
+  BottomNavigationBarItem _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required BuildContext context,
+  }) {
+    final isSelected = items.indexOf(label) == currentIndex;
+
+    return BottomNavigationBarItem(
+      icon: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Icon(
+          isSelected ? activeIcon : icon,
+          size: 24,
+        ),
+      ),
+      label: label,
+    );
+  }
+
+  List<String> get items => const ['Vehicles', 'Services', 'Stats', 'Settings'];
 }

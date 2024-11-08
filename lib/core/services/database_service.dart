@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class DatabaseService {
   static Database? _database;
   static const String dbName = 'car_maintenance.db';
-  static const int _currentVersion = 3;
+  static const int _currentVersion = 4;
 
   static Future<void> initialize() async {
     if (_database != null) return;
@@ -59,7 +59,11 @@ class DatabaseService {
           wheelsSize TEXT,
           wiperSize TEXT,
           lightsCode TEXT,
-          notes TEXT NOT NULL DEFAULT ''
+          notes TEXT NOT NULL DEFAULT '',
+          type TEXT DEFAULT 'personal',
+          companyName TEXT,
+          employeeId TEXT,
+          assignmentDate TEXT
         )
       ''');
       debugPrint('Vehicles table created');
@@ -171,6 +175,17 @@ class DatabaseService {
             notes TEXT,
             FOREIGN KEY (vehicleId) REFERENCES vehicles (id) ON DELETE CASCADE
           )
+        ''');
+      }
+
+      if (oldVersion < 4) {
+        debugPrint('Upgrading to version 4...');
+        // Add company vehicle fields
+        await db.execute('''
+          ALTER TABLE vehicles ADD COLUMN type TEXT DEFAULT 'personal';
+          ALTER TABLE vehicles ADD COLUMN companyName TEXT;
+          ALTER TABLE vehicles ADD COLUMN employeeId TEXT;
+          ALTER TABLE vehicles ADD COLUMN assignmentDate TEXT;
         ''');
       }
     } catch (e) {

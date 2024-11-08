@@ -2,36 +2,35 @@ import 'package:flutter/material.dart';
 import 'package:norimoto/presentation/widgets/shared/app_bar.dart';
 import 'package:norimoto/presentation/widgets/vehicle_list.dart';
 import 'package:norimoto/presentation/screens/add_vehicle_screen.dart';
+import 'package:norimoto/domain/models/vehicle.dart';
 
 class VehiclesScreen extends StatelessWidget {
   const VehiclesScreen({super.key});
 
-  void _showAddVehicleOptions(BuildContext context) {
-    showModalBottomSheet(
+  Future<void> _showAddVehicleOptions(BuildContext context) async {
+    await showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Add New Vehicle',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
               ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.directions_car),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.person),
                 ),
                 title: const Text('Personal Vehicle'),
-                subtitle: const Text('Add your own car, motorcycle, etc.'),
+                subtitle: const Text('Add your own vehicle'),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -42,30 +41,36 @@ class VehiclesScreen extends StatelessWidget {
                   );
                 },
               ),
+              const Divider(),
               ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.business),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .secondary
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.business),
                 ),
                 title: const Text('Company Vehicle'),
-                subtitle: const Text('Add a company or fleet vehicle'),
+                subtitle: const Text('Add a company-assigned vehicle'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Implement company vehicle addition
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Company vehicle support coming soon'),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddVehicleScreen(
+                        initialType: VehicleType.company,
+                      ),
                     ),
                   );
                 },
               ),
-              const SizedBox(height: 16),
             ],
           ),
         ),
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
     );
   }
@@ -76,17 +81,6 @@ class VehiclesScreen extends StatelessWidget {
       appBar: SharedAppBar(
         title: 'My Vehicles',
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cloud_upload_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Cloud backup coming soon'),
-                ),
-              );
-            },
-            tooltip: 'Backup to Cloud',
-          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showAddVehicleOptions(context),

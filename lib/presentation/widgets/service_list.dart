@@ -4,6 +4,7 @@ import 'package:norimoto/domain/models/service_record.dart';
 import 'package:intl/intl.dart';
 import 'package:norimoto/presentation/screens/add_service_screen.dart';
 import 'package:norimoto/presentation/screens/schedule_service_screen.dart';
+import 'package:norimoto/presentation/screens/edit_service_screen.dart';
 
 class ServiceList extends StatefulWidget {
   final String? vehicleId;
@@ -246,14 +247,48 @@ class ServiceCard extends StatelessWidget {
                 icon: const Icon(Icons.edit),
                 label: const Text('Edit'),
                 onPressed: () {
-                  // TODO: Navigate to edit screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditServiceScreen(
+                        service: service,
+                      ),
+                    ),
+                  );
                 },
               ),
               TextButton.icon(
                 icon: const Icon(Icons.delete),
                 label: const Text('Delete'),
-                onPressed: () {
-                  _showDeleteDialog(context);
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Delete Service'),
+                      content: const Text(
+                        'Are you sure you want to delete this service record? This action cannot be undone.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirmed ?? false) {
+                    await ServiceRepository.deleteService(service.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Service record deleted')),
+                      );
+                    }
+                  }
                 },
               ),
             ],
@@ -285,36 +320,5 @@ class ServiceCard extends StatelessWidget {
     final now = DateTime.now();
     final difference = reminderDate.difference(now);
     return difference.inDays <= 7 && difference.isNegative == false;
-  }
-
-  Future<void> _showDeleteDialog(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Service'),
-        content: const Text(
-          'Are you sure you want to delete this service record? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed ?? false) {
-      await ServiceRepository.deleteService(service.id);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Service record deleted')),
-        );
-      }
-    }
   }
 }

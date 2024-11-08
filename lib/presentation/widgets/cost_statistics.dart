@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:norimoto/data/repositories/service_repository.dart';
-import 'package:norimoto/data/repositories/fuel_repository.dart';
 import 'package:norimoto/domain/models/service_record.dart';
 import 'package:norimoto/domain/models/fuel_record.dart';
 import 'package:intl/intl.dart';
@@ -20,6 +18,7 @@ class CostStatistics extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('CostStatistics build');
     debugPrint('Service Records: ${serviceRecords.length}');
     debugPrint('Fuel Records: ${fuelRecords.length}');
 

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:norimoto/core/services/database_service.dart';
 import 'package:norimoto/domain/models/vehicle.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:norimoto/data/repositories/service_repository.dart';
+import 'package:norimoto/data/repositories/fuel_repository.dart';
 
 class VehicleRepository {
   static final _vehiclesController =
@@ -61,12 +63,35 @@ class VehicleRepository {
 
   static Future<void> deleteVehicle(String id) async {
     final db = DatabaseService.database;
-    await db.delete(
-      'vehicles',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
-    await getAllVehicles(); // Refresh the stream
+
+    // Start a transaction to ensure all operations complete or none do
+    await db.transaction((txn) async {
+      // Delete the vehicle
+      await txn.delete(
+        'vehicles',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      // Delete related service records
+      await txn.delete(
+        'service_records',
+        where: 'vehicleId = ?',
+        whereArgs: [id],
+      );
+
+      // Delete related fuel records
+      await txn.delete(
+        'fuel_records',
+        where: 'vehicleId = ?',
+        whereArgs: [id],
+      );
+    });
+
+    // Refresh all streams
+    await getAllVehicles();
+    await ServiceRepository.getAllServices();
+    await FuelRepository.getAllFuelRecords();
   }
 
   static void dispose() {

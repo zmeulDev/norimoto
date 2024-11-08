@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:norimoto/domain/models/vehicle.dart';
 import 'package:norimoto/presentation/widgets/shared/app_bar.dart';
-import 'package:intl/intl.dart';
 import 'package:norimoto/presentation/widgets/service_list.dart';
-import 'package:norimoto/presentation/screens/add_service_screen.dart';
 import 'package:norimoto/presentation/screens/schedule_service_screen.dart';
 import 'package:norimoto/presentation/widgets/fuel_list.dart';
 import 'package:norimoto/data/repositories/service_repository.dart';
@@ -11,6 +10,7 @@ import 'package:norimoto/data/repositories/fuel_repository.dart';
 import 'package:norimoto/domain/models/service_record.dart';
 import 'package:norimoto/domain/models/fuel_record.dart';
 import 'package:norimoto/presentation/widgets/cost_statistics.dart';
+import 'package:norimoto/presentation/screens/edit_vehicle_screen.dart';
 
 class VehicleDetailsScreen extends StatefulWidget {
   final Vehicle vehicle;
@@ -24,80 +24,112 @@ class VehicleDetailsScreen extends StatefulWidget {
   State<VehicleDetailsScreen> createState() => _VehicleDetailsScreenState();
 }
 
-class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
-  int _currentTabIndex = 0;
+class _VehicleDetailsScreenState extends State<VehicleDetailsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    // Initialize data streams once
-    ServiceRepository.getAllServices();
-    FuelRepository.getAllFuelRecords();
+    _tabController = TabController(length: 4, vsync: this);
+
+    // Add listener for tab changes
+    _tabController.addListener(() {
+      if (_tabController.index == 3) {
+        // Costs tab
+        debugPrint('Costs tab selected, refreshing data');
+        ServiceRepository.getAllServices();
+        FuelRepository.getAllFuelRecords();
+      }
+    });
+
+    // Initial data load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ServiceRepository.getAllServices();
+      FuelRepository.getAllFuelRecords();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Scaffold(
-        appBar: SharedAppBar(
-          title:
-              '${widget.vehicle.year} ${widget.vehicle.make} ${widget.vehicle.model}',
-          bottom: TabBar(
-            onTap: (index) => setState(() => _currentTabIndex = index),
-            tabs: const [
-              Tab(text: 'Details'),
-              Tab(text: 'Services'),
-              Tab(text: 'Fuel'),
-              Tab(text: 'Costs'),
-            ],
+    return Scaffold(
+      appBar: SharedAppBar(
+        title:
+            '${widget.vehicle.year} ${widget.vehicle.make} ${widget.vehicle.model}',
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Details'),
+            Tab(text: 'Services'),
+            Tab(text: 'Fuel'),
+            Tab(text: 'Costs'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditVehicleScreen(
+                    vehicle: widget.vehicle,
+                  ),
+                ),
+              );
+
+              // If vehicle was updated, pop back to vehicles list
+              if (result == true && mounted) {
+                Navigator.pop(context);
+              }
+            },
+            tooltip: 'Edit Vehicle',
           ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                // TODO: Navigate to edit screen
-              },
-            ),
-            PopupMenuButton(
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'export',
-                  child: Text('Export Data'),
-                ),
-                const PopupMenuItem(
-                  value: 'schedule',
-                  child: Text('Schedule Service'),
-                ),
-              ],
-              onSelected: (value) {
-                switch (value) {
-                  case 'export':
-                    // TODO: Implement export
-                    break;
-                  case 'schedule':
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ScheduleServiceScreen(
-                          vehicleId: widget.vehicle.id,
-                        ),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'export',
+                child: Text('Export Data'),
+              ),
+              const PopupMenuItem(
+                value: 'schedule',
+                child: Text('Schedule Service'),
+              ),
+            ],
+            onSelected: (value) {
+              switch (value) {
+                case 'export':
+                  // TODO: Implement export
+                  break;
+                case 'schedule':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScheduleServiceScreen(
+                        vehicleId: widget.vehicle.id,
                       ),
-                    );
-                    break;
-                }
-              },
-            ),
-          ],
-        ),
-        body: TabBarView(
-          children: [
-            _buildDetailsTab(),
-            _buildServicesTab(),
-            _buildFuelTab(),
-            _buildCostsTab(),
-          ],
-        ),
+                    ),
+                  );
+                  break;
+              }
+            },
+          ),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildDetailsTab(),
+          ServiceList(vehicleId: widget.vehicle.id),
+          FuelList(vehicleId: widget.vehicle.id),
+          _buildCostsTab(),
+        ],
       ),
     );
   }
@@ -179,6 +211,8 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
   }
 
   Widget _buildCostsTab() {
+    debugPrint('Building costs tab for vehicle: ${widget.vehicle.id}');
+
     return StreamBuilder<List<ServiceRecord>>(
       stream: ServiceRepository.servicesStream,
       initialData: const [],
@@ -187,9 +221,22 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
           stream: FuelRepository.fuelRecordsStream,
           initialData: const [],
           builder: (context, fuelSnapshot) {
+            if (serviceSnapshot.connectionState == ConnectionState.waiting ||
+                fuelSnapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            debugPrint(
+                'Service stream update: ${serviceSnapshot.data?.length ?? 0} records');
+
+            debugPrint(
+                'Fuel stream update: ${fuelSnapshot.data?.length ?? 0} records');
+
             if (serviceSnapshot.hasError || fuelSnapshot.hasError) {
               debugPrint(
-                  'Error in streams: ${serviceSnapshot.error ?? fuelSnapshot.error}');
+                  'Stream error: ${serviceSnapshot.error ?? fuelSnapshot.error}');
               return Center(
                 child: Text(
                     'Error: ${serviceSnapshot.error ?? fuelSnapshot.error}'),
@@ -199,34 +246,29 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
             final services = serviceSnapshot.data ?? [];
             final fuels = fuelSnapshot.data ?? [];
 
-            debugPrint('Current vehicle ID: ${widget.vehicle.id}');
+            // Print all records for debugging
             debugPrint('All services: ${services.length}');
-            debugPrint('All fuels: ${fuels.length}');
-
-            // Print all fuel records vehicleIds for debugging
-            for (var fuel in fuels) {
-              debugPrint('Fuel record vehicleId: ${fuel.vehicleId}');
+            for (var service in services) {
+              debugPrint(
+                  'Service - ID: ${service.id}, vehicleId: ${service.vehicleId}');
             }
 
+            debugPrint('All fuels: ${fuels.length}');
+            for (var fuel in fuels) {
+              debugPrint('Fuel - ID: ${fuel.id}, vehicleId: ${fuel.vehicleId}');
+            }
+
+            // Filter records for current vehicle
             final vehicleServices = services
                 .where((s) => s.vehicleId == widget.vehicle.id)
                 .toList();
             final vehicleFuels =
                 fuels.where((f) => f.vehicleId == widget.vehicle.id).toList();
 
-            debugPrint('Vehicle services: ${vehicleServices.length}');
-            debugPrint('Vehicle fuels: ${vehicleFuels.length}');
+            debugPrint('Filtered services: ${vehicleServices.length}');
+            debugPrint('Filtered fuels: ${vehicleFuels.length}');
 
-            // Print some sample data to verify filtering
-            if (vehicleServices.isNotEmpty) {
-              debugPrint(
-                  'Sample service vehicleId: ${vehicleServices.first.vehicleId}');
-            }
-            if (vehicleFuels.isNotEmpty) {
-              debugPrint(
-                  'Sample fuel vehicleId: ${vehicleFuels.first.vehicleId}');
-            }
-
+            // Only show empty state if both lists are empty
             if (vehicleServices.isEmpty && vehicleFuels.isEmpty) {
               return Center(
                 child: Padding(
@@ -268,6 +310,7 @@ class _VehicleDetailsScreenState extends State<VehicleDetailsScreen> {
               );
             }
 
+            debugPrint('Showing cost statistics');
             return CostStatistics(
               vehicleId: widget.vehicle.id,
               serviceRecords: vehicleServices,

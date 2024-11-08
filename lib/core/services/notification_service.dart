@@ -21,16 +21,14 @@ class NotificationService {
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
       // Initialize native iOS notification setup
-      final iosSettings = DarwinInitializationSettings(
+      const iosSettings = DarwinInitializationSettings(
         requestAlertPermission: false, // We'll request permissions separately
         requestBadgePermission: false,
         requestSoundPermission: false,
-        onDidReceiveLocalNotification: (id, title, body, payload) async {
-          debugPrint('Received iOS notification: $title');
-        },
+        onDidReceiveLocalNotification: _onDidReceiveLocalNotification,
       );
 
-      final initSettings = InitializationSettings(
+      const initSettings = InitializationSettings(
         android: androidSettings,
         iOS: iosSettings,
       );
@@ -38,9 +36,7 @@ class NotificationService {
       // Initialize plugin
       await _notifications.initialize(
         initSettings,
-        onDidReceiveNotificationResponse: (details) {
-          debugPrint('Notification tapped: ${details.payload}');
-        },
+        onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
       );
 
       debugPrint('Notifications initialized successfully');
@@ -52,6 +48,16 @@ class NotificationService {
       debugPrint('Error initializing notifications: $e');
       // Don't rethrow - we want the app to continue working even if notifications fail
     }
+  }
+
+  static Future<void> _onDidReceiveLocalNotification(
+      int id, String? title, String? body, String? payload) async {
+    debugPrint('Received iOS notification: $title');
+  }
+
+  static void _onDidReceiveNotificationResponse(
+      NotificationResponse details) async {
+    debugPrint('Notification tapped: ${details.payload}');
   }
 
   static Future<void> requestPermissions() async {
@@ -98,27 +104,33 @@ class NotificationService {
     }
 
     try {
+      const androidDetails = AndroidNotificationDetails(
+        'service_reminders',
+        'Service Reminders',
+        channelDescription: 'Notifications for service reminders',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
       await _notifications.zonedSchedule(
         id.hashCode,
         title,
         body,
         tz.TZDateTime.from(scheduledDate, tz.local),
-        NotificationDetails(
-          android: AndroidNotificationDetails(
-            'service_reminders',
-            'Service Reminders',
-            channelDescription: 'Notifications for service reminders',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
-        androidAllowWhileIdle: true,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         payload: id, // Store the service ID as payload
@@ -148,5 +160,6 @@ class NotificationService {
 
 // Add this class to handle navigation context
 class NavigationService {
-  static GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 }

@@ -3,14 +3,14 @@ import 'package:norimoto/presentation/theme/app_theme.dart';
 import 'package:norimoto/presentation/routes/app_router.dart';
 import 'package:norimoto/core/services/notification_service.dart';
 
-class CarMaintenanceApp extends StatelessWidget {
-  const CarMaintenanceApp({super.key});
+class NorimotoApp extends StatelessWidget {
+  const NorimotoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: NavigationService.navigatorKey,
-      title: 'Car Maintenance Tracker',
+      title: 'Norimoto',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,

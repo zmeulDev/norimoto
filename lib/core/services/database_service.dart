@@ -218,4 +218,16 @@ class DatabaseService {
     await initialize();
     debugPrint('Database reset completed');
   }
+
+  static Future<String> getDatabasePath() async {
+    final databasesPath = await getDatabasesPath();
+    return path.join(databasesPath, dbName);
+  }
+
+  static Future<void> close() async {
+    if (_database != null) {
+      await _database!.close();
+      _database = null;
+    }
+  }
 }

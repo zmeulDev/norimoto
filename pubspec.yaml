@@ -19,11 +19,32 @@ dependencies:
   flutter_local_notifications: ^16.3.0
   timezone: ^0.9.2
   fl_chart: ^0.65.0
+  path_provider: ^2.0.15
+  archive: ^3.4.9
+  file_picker: ^6.1.1
+  permission_handler: ^11.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.9
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/images/splash.png
+  color_dark: "#000000"
+  android_12:
+    image: assets/images/splash.png

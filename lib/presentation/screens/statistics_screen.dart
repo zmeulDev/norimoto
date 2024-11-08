@@ -6,8 +6,10 @@ import 'package:norimoto/data/repositories/vehicle_repository.dart';
 import 'package:norimoto/domain/models/service_record.dart';
 import 'package:norimoto/domain/models/fuel_record.dart';
 import 'package:norimoto/domain/models/vehicle.dart';
+import 'package:norimoto/domain/models/service_type.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' show max;
 
 class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
@@ -299,11 +301,29 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   Widget _buildServiceTypeBreakdown(
       BuildContext context, List<ServiceRecord> services) {
     final typeBreakdown = <String, double>{};
+    final currencyFormat = NumberFormat.currency(symbol: '\$');
 
     for (final service in services) {
       final type = service.type.displayName;
       typeBreakdown[type] = (typeBreakdown[type] ?? 0) + service.cost;
     }
+
+    final totalCost =
+        typeBreakdown.values.fold<double>(0, (sum, cost) => sum + cost);
+    final sortedEntries = typeBreakdown.entries.toList()
+      ..sort(
+          (a, b) => b.value.compareTo(a.value)); // Sort by cost, highest first
+
+    final colors = [
+      Colors.blue,
+      Colors.red,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
+    ];
 
     return Card(
       child: Padding(
@@ -316,16 +336,62 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: PieChart(
-                PieChartData(
-                  sections: _createPieChartSections(context, typeBreakdown),
-                  centerSpaceRadius: 40,
-                  sectionsSpace: 2,
+            ...sortedEntries.map((entry) {
+              final index = sortedEntries.indexOf(entry);
+              final percentage = (entry.value / totalCost * 100);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          ServiceType.values
+                              .firstWhere((t) => t.displayName == entry.key)
+                              .icon,
+                          color: colors[index % colors.length],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            entry.key,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        Text(
+                          currencyFormat.format(entry.value),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: entry.value / typeBreakdown.values.reduce(max),
+                        backgroundColor:
+                            colors[index % colors.length].withOpacity(0.1),
+                        color: colors[index % colors.length],
+                        minHeight: 8,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${percentage.toStringAsFixed(1)}%',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            }).toList(),
           ],
         ),
       ),
@@ -394,38 +460,6 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
       ),
     );
-  }
-
-  List<PieChartSectionData> _createPieChartSections(
-      BuildContext context, Map<String, double> data) {
-    final colors = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.amber,
-    ];
-
-    final total = data.values.fold<double>(0, (sum, value) => sum + value);
-
-    return data.entries.map((entry) {
-      final index = data.keys.toList().indexOf(entry.key);
-      final percentage = (entry.value / total * 100);
-      return PieChartSectionData(
-        color: colors[index % colors.length],
-        value: entry.value,
-        title: percentage < 5 ? '' : '${percentage.toStringAsFixed(1)}%',
-        radius: 80,
-        titleStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      );
-    }).toList();
   }
 
   Widget _buildStatRow(

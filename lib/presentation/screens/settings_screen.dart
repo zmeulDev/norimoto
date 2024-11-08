@@ -314,96 +314,138 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       await showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Backup History'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: backups.map((backup) {
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              DateFormat.yMMMd()
-                                  .add_Hm()
-                                  .format(backup.timestamp),
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            Chip(
-                              label: Text(
-                                backup.isAuto ? 'Auto' : 'Manual',
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                              backgroundColor: backup.isAuto
-                                  ? Colors.blue.withOpacity(0.2)
-                                  : Colors.green.withOpacity(0.2),
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4),
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text('Location: ${backup.displayLocation}'),
-                        Text(
-                            'Size: ${(backup.size / 1024).toStringAsFixed(1)} KB'),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton.icon(
-                              icon: const Icon(Icons.restore),
-                              label: const Text('Restore'),
-                              onPressed: () async {
-                                Navigator.pop(context);
-                                await BackupService.restoreBackup(backup.path);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Restore completed successfully')),
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              icon: const Icon(Icons.delete),
-                              label: const Text('Delete'),
-                              onPressed: () async {
-                                await BackupService.deleteBackup(backup.path);
-                                Navigator.pop(context);
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Backup deleted')),
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+        builder: (context) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: 500,
+              maxHeight: 600,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Backup History',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
                   ),
-                );
-              }).toList(),
+                  const Divider(),
+                  Expanded(
+                    child: backups.isEmpty
+                        ? const Center(
+                            child: Text('No backups found'),
+                          )
+                        : ListView.builder(
+                            itemCount: backups.length,
+                            itemBuilder: (context, index) {
+                              final backup = backups[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              DateFormat.yMMMd()
+                                                  .add_Hm()
+                                                  .format(backup.timestamp),
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleSmall,
+                                            ),
+                                          ),
+                                          Chip(
+                                            label: Text(
+                                              backup.isAuto ? 'Auto' : 'Manual',
+                                              style:
+                                                  const TextStyle(fontSize: 12),
+                                            ),
+                                            backgroundColor: backup.isAuto
+                                                ? Colors.blue.withOpacity(0.2)
+                                                : Colors.green.withOpacity(0.2),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 4),
+                                            materialTapTargetSize:
+                                                MaterialTapTargetSize
+                                                    .shrinkWrap,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                          'Location: ${backup.displayLocation}'),
+                                      Text(
+                                          'Size: ${(backup.size / 1024).toStringAsFixed(1)} KB'),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          TextButton.icon(
+                                            icon: const Icon(Icons.restore,
+                                                size: 20),
+                                            label: const Text('Restore'),
+                                            onPressed: () async {
+                                              Navigator.pop(context);
+                                              await BackupService.restoreBackup(
+                                                  backup.path);
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Restore completed successfully')),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(width: 8),
+                                          TextButton.icon(
+                                            icon: const Icon(Icons.delete,
+                                                size: 20),
+                                            label: const Text('Delete'),
+                                            onPressed: () async {
+                                              await BackupService.deleteBackup(
+                                                  backup.path);
+                                              Navigator.pop(context);
+                                              if (mounted) {
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Backup deleted')),
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
         ),
       );
     } catch (e) {

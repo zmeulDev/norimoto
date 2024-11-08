@@ -251,20 +251,23 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       List<ServiceRecord> services,
       List<FuelRecord> fuels) {
     final vehicleCosts = <String, double>{};
+    final totalCosts = <String, double>{};
+    final fuelCosts = <String, double>{};
+    final serviceCosts = <String, double>{};
 
-    // Calculate total costs per vehicle
+    // Calculate costs for each vehicle
     for (final vehicle in vehicles) {
       final vehicleServices =
           services.where((s) => s.vehicleId == vehicle.id).toList();
       final vehicleFuels =
           fuels.where((f) => f.vehicleId == vehicle.id).toList();
 
-      final serviceCost =
-          vehicleServices.fold<double>(0, (sum, s) => sum + s.cost);
-      final fuelCost = vehicleFuels.fold<double>(0, (sum, f) => sum + f.cost);
-
-      vehicleCosts['${vehicle.year} ${vehicle.make} ${vehicle.model}'] =
-          serviceCost + fuelCost;
+      serviceCosts[vehicle.id] =
+          vehicleServices.fold(0, (sum, service) => sum + service.cost);
+      fuelCosts[vehicle.id] =
+          vehicleFuels.fold(0, (sum, fuel) => sum + fuel.cost);
+      totalCosts[vehicle.id] =
+          (serviceCosts[vehicle.id] ?? 0) + (fuelCosts[vehicle.id] ?? 0);
     }
 
     return Card(
@@ -278,22 +281,78 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            ...vehicleCosts.entries.map((entry) {
+            ...vehicles.map((vehicle) {
+              final totalCost = totalCosts[vehicle.id] ?? 0;
+              final serviceCost = serviceCosts[vehicle.id] ?? 0;
+              final fuelCost = fuelCosts[vehicle.id] ?? 0;
+
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: LinearProgressIndicator(
-                  value: entry.value /
-                      (vehicleCosts.values
-                          .reduce((max, value) => value > max ? value : max)),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  color: Theme.of(context).colorScheme.primary,
-                  minHeight: 20,
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${vehicle.year} ${vehicle.make} ${vehicle.model}',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      children: [
+                        _buildCostItem(
+                          context,
+                          'Total',
+                          totalCost,
+                          Colors.blue,
+                        ),
+                        _buildCostItem(
+                          context,
+                          'Service',
+                          serviceCost,
+                          Colors.green,
+                        ),
+                        _buildCostItem(
+                          context,
+                          'Fuel',
+                          fuelCost,
+                          Colors.orange,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               );
-            }),
+            }).toList(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCostItem(
+      BuildContext context, String label, double cost, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          Text(
+            NumberFormat.currency(symbol: '\$').format(cost),
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ],
       ),
     );
   }
